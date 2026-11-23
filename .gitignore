@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local configuration
+.env
+.env.*
+.agents/
+.aws/
+.codex/
+.DS_Store
+
+# LaTeX build files
+/documento/build/
+/documento/*.aux
+/documento/*.fdb_latexmk
+/documento/*.fls
+/documento/*.log
+/documento/*.out
+/documento/*.synctex.gz
+/documento/*.toc

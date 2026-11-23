@@ -1,0 +1,209 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-minimal]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,booktabs,microtype}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={El péndulo que se vacía},pdfsubject={Informe de laboratorio computacional}}
+
+\title{El péndulo que se vacía\\[0.4em]\large Informe de laboratorio computacional}
+\author{Proyecto \texttt{pendulum}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Se estudió por simulación un péndulo físico cuyo recipiente cilíndrico se
+vacía por un orificio inferior. La altura del líquido se calculó con la ley
+de Torricelli, y el movimiento angular se integró con Runge--Kutta de
+cuarto orden. En el caso base, el vaciado duró \(96{,}33\,\mathrm{s}\) y el
+período de pequeña amplitud alcanzó un máximo de \(1{,}6989\,\mathrm{s}\).
+Una comparación con la aproximación adiabática, cinco comprobaciones del
+modelo y un refinamiento del paso cuantificaron la consistencia de los
+resultados numéricos.
+\end{abstract}
+
+\section{Objetivo}
+Determinar cómo el vaciado modifica el período y la amplitud de un péndulo
+físico. Implementar el mismo modelo en Python para reproducir los cálculos
+y en JavaScript para explorar el efecto de los parámetros en el navegador.
+
+\section{Modelo físico}
+La botella oscila en un plano alrededor de un pivote fijo. La cuerda se
+mantiene tensa y la botella se alinea con ella. Se aproxima el líquido
+como un cilindro homogéneo de altura \(h(t)\) que gira con el recipiente.
+El orificio se ubica sobre el eje del cilindro, a una distancia
+\(s=L_c+H\) del pivote, donde \(L_c\) es la longitud de la cuerda y \(H\)
+es la altura interior de la botella.
+
+Con radio interior \(R\), diámetro del orificio \(d_a\), densidad \(\rho\)
+y coeficiente de descarga \(C_d\), se definen \(A=\pi R^2\) y
+\(a=\pi d_a^2/4\). La conservación de masa y la velocidad de descarga
+dan \(A\dot h=-C_d a\sqrt{2gh}\). Para \(a>0\) y \(h_0>0\),
+\[
+ t_v=\frac{A}{C_da}\sqrt{\frac{2h_0}{g}},\qquad
+ h(t)=h_0\max(0,1-t/t_v)^2.
+\]
+Para un orificio cerrado se mantiene \(h=h_0\). Al completarse el vaciado,
+\(h=\dot h=0\). La masa de líquido es \(m_w=\rho Ah\).
+
+Con \(d_b=L_c+H/2\) y masa de botella \(m_b\), el momento estático \(S\)
+y el momento de inercia \(I\) respecto del pivote son
+\begin{align*}
+ S(h) &= m_b d_b + m_w(s-h/2),\\
+ I(h) &= m_b(R^2/2+H^2/12+d_b^2)
+       +m_w\big[R^2/4+h^2/12+(s-h/2)^2\big].
+\end{align*}
+El flujo de salida transporta momento angular a razón de
+\(\dot m_{\mathrm{out}}s^2\dot\theta\), con
+\(\dot m_{\mathrm{out}}=-\rho A\dot h\). El balance incluye ese flujo y el
+torque gravitatorio \(-gS\sin\theta\):
+\begin{align*}
+ \frac{d}{dt}(I\dot\theta)+\dot m_{\mathrm{out}}s^2\dot\theta
+      &= -gS\sin\theta,\\
+ I\ddot\theta+\Gamma\dot\theta+gS\sin\theta &= 0,\qquad
+ \Gamma=\rho A|\dot h|\big[h(2s-h)-R^2/4\big].
+\end{align*}
+Se obtiene la longitud equivalente \(L_{\mathrm{eq}}=I/S\) y el período
+instantáneo de pequeña amplitud \(T_0=2\pi\sqrt{I/(gS)}\). El desarrollo
+teórico del repositorio amplía las derivaciones y propone un protocolo
+de contraste experimental \cite{teoria}.
+
+\section{Implementación y procedimiento}
+\begin{enumerate}
+\item \texttt{fisica.py} calcula \(h\) y \(\dot h\) analíticamente y
+evalúa \(S\), \(I\) y \(\Gamma\) en cada etapa de integración. Se resolvió
+el sistema de primer orden \(\dot\theta=\omega\),
+\(\dot\omega=-(\Gamma\omega+gS\sin\theta)/I\), con
+\(\theta(0)=\theta_0\) y \(\omega(0)=0\). El paso fijo nominal de RK4 es
+\(10^{-3}\,\mathrm{s}\).
+
+\item Para estimar el período numérico, se interpoló linealmente el
+instante de cada cruce ascendente de \(\theta=0\) y se restaron los
+tiempos de dos cruces consecutivos. La amplitud de cada ciclo completo
+se estimó con el mayor valor de \(|\theta|\) registrado en los pasos de
+integración entre esos cruces.
+
+\item \texttt{web/simulador.js} implementa las mismas ecuaciones y usa
+Canvas para mostrar la oscilación y las series temporales. La velocidad
+de animación cambia cuántos pasos se ejecutan por fotograma. La interfaz
+permite variar las condiciones iniciales y comparar el período medido
+por cruces con el período teórico.
+
+\item Desde la raíz del repositorio se ejecutó
+\texttt{python3 main.py --solo-verificar}. Ese comando ejecuta las cinco
+comprobaciones e imprime los resultados del caso base. Para explorar el
+efecto del vaciado en la interfaz, se puede ejecutar
+\texttt{python3 main.py} y repetir el caso base con \(d_a=0\).
+\end{enumerate}
+
+\section{Resultados}
+El caso base empleó \(H=h_0=0{,}250\,\mathrm{m}\),
+\(R=0{,}040\,\mathrm{m}\), \(L_c=0{,}500\,\mathrm{m}\),
+\(m_b=0{,}040\,\mathrm{kg}\), \(d_a=5\,\mathrm{mm}\), \(C_d=0{,}60\),
+\(\theta_0=12^\circ\), \(\rho=1000\,\mathrm{kg/m^3}\) y
+\(g=9{,}81\,\mathrm{m/s^2}\).
+
+\begin{table}[htbp]
+\centering
+\caption{Predicciones del modelo para el caso base. Los períodos de esta
+tabla se calculan con la aproximación de pequeña amplitud.}
+\begin{tabular}{lc}
+\toprule
+Magnitud & Valor \\
+\midrule
+Tiempo de vaciado \(t_v\) & \(96{,}33\,\mathrm{s}\) \\
+Período inicial & \(1{,}5973\,\mathrm{s}\) \\
+Período máximo & \(1{,}6989\,\mathrm{s}\) \\
+Instante y altura en el máximo & \(61{,}1\,\mathrm{s}\), \(33{,}4\,\mathrm{mm}\) \\
+Período con botella vacía & \(1{,}5981\,\mathrm{s}\) \\
+Factor adiabático final \(\Theta_f/\Theta_0\) & \(0{,}71984\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Comprobaciones ejecutadas con el modelo de referencia en Python.}
+\small
+\begin{tabular}{@{}p{0.39\linewidth}p{0.36\linewidth}p{0.17\linewidth}@{}}
+\toprule
+Comprobación & Resultado & Tolerancia \\
+\midrule
+Período de amplitud finita con orificio cerrado &
+\(1{,}601694\,\mathrm{s}\), error \(2{,}0\times10^{-8}\) &
+\(2\times10^{-4}\) \\
+Derivadas de \(S\) e \(I\) &
+Error relativo máximo \(6{,}3\times10^{-12}\) & \(10^{-6}\) \\
+Amplitud para \(d_a=8\,\mathrm{mm}\) &
+RK4 \(0{,}72443\), WKB \(0{,}71984\), error \(0{,}64\,\%\) & \(1\,\%\) \\
+Amplitud para \(d_a=6\) y \(12\,\mathrm{mm}\) &
+Factores \(0{,}72043\) y \(0{,}72875\), diferencia \(1{,}14\,\%\) & \(2\,\%\) \\
+Límite de masa puntual &
+Variaciones del período y la amplitud inferiores a \(0{,}001\,\%\) &
+\(0{,}5\,\%\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Para evaluar la sensibilidad al paso se ejecutó \texttt{fisica.integrar}
+con los parámetros base, \texttt{t\_final=100} y \texttt{muestreo=1},
+variando \texttt{dt} como se indica en la tabla~\ref{tab:paso}.
+El ángulo se tomó de la última muestra, \texttt{r['theta'][-1]}.
+
+\begin{table}[htbp]
+\centering
+\caption{Sensibilidad al paso de integración en el caso base.}
+\label{tab:paso}
+\begin{tabular}{cc}
+\toprule
+Paso \(\Delta t\) (\(\mathrm{ms}\)) & \(\theta(100\,\mathrm{s})\) (\(\mathrm{rad}\)) \\
+\midrule
+\(2\)   & \(0{,}055684244362\) \\
+\(1\)   & \(0{,}055684243009\) \\
+\(0{,}5\) & \(0{,}055684242924\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discusión}
+El máximo del período supera en un \(6{,}36\,\%\) el valor inicial.
+Surge de la evolución del cociente \(I/S\): retirar agua cambia tanto
+la distribución de masa que determina \(I\) como el brazo gravitatorio
+que determina \(S\). Al quedar vacía la botella, el período se aproxima de
+nuevo a su valor inicial.
+
+La aproximación de Wentzel--Kramers--Brillouin (WKB) predice
+\[
+ \frac{\Theta_f}{\Theta_0}=\sqrt{\frac{\Omega_0}{\Omega_f}}\,
+ \exp\!\left[-\frac12\int_0^{t_v}\frac{\Gamma}{I}\,dt\right],
+ \qquad \Omega=\sqrt{gS/I}.
+\] Al sustituir \(dt=dh/\dot h\), la integral depende
+de la geometría y del llenado inicial. La diferencia del \(1{,}14\,\%\)
+entre orificios cuantifica la variación de las estimaciones numéricas
+para dos velocidades de vaciado. Se usó el último ciclo completo
+disponible antes de \(0{,}995\,t_v\) para esas estimaciones.
+
+El refinamiento de \(1\) a \(0{,}5\,\mathrm{ms}\) modificó el ángulo a
+\(100\,\mathrm{s}\) en aproximadamente \(8{,}5\times10^{-11}\,\mathrm{rad}\).
+Esa comparación mide la sensibilidad numérica en el caso base. Los
+resultados proceden de una simulación con descarga cuasiestacionaria,
+sin oleaje interno, fricción del pivote ni arrastre del aire. Su
+contraste físico requeriría medir \(h(t)\) y \(\theta(t)\) en un montaje
+instrumentado.
+
+\section{Conclusiones}
+En el caso base simulado, el período presenta un máximo antes de que la
+botella se vacíe y la aproximación adiabática predice una amplitud final
+cercana al \(72\,\%\) de la inicial. Las cinco comprobaciones pasaron
+dentro de las tolerancias definidas, y el refinamiento del paso confirmó
+la estabilidad del ángulo final para los pasos examinados.
+
+\begin{thebibliography}{9}
+\bibitem{teoria}
+Proyecto \texttt{pendulum}, \emph{El péndulo que se vacía},
+desarrollo teórico incluido en \path{documento/pendulo_vaciado.tex}.
+\end{thebibliography}
+\end{document}

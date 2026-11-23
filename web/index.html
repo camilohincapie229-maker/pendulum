@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El péndulo que se vacía — simulador interactivo</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="titulo">
+    <h1>El péndulo que se vacía</h1>
+    <p>Péndulo físico de masa variable con vaciado tipo Torricelli · simulación interactiva</p>
+  </div>
+  <div class="ecuacion-cabecera">
+    <span>I<sub>O</sub>(t)&nbsp;θ&#776; + Γ(t)&nbsp;θ&#775; + g&nbsp;S(t)&nbsp;sen&nbsp;θ = 0</span>
+  </div>
+</header>
+
+<main class="disposicion">
+
+  <!-- ================= PANEL DE CONTROLES ================= -->
+  <aside class="panel controles">
+    <h2>Parámetros</h2>
+
+    <fieldset>
+      <legend>1 · Dimensiones del envase</legend>
+      <div class="control">
+        <label for="H">Altura interior <i>H</i></label>
+        <div class="fila"><input type="range" id="H" min="0.05" max="0.60" step="0.005" value="0.250">
+        <output id="H_val">25.0 cm</output></div>
+      </div>
+      <div class="control">
+        <label for="D">Diámetro interior <i>2R</i></label>
+        <div class="fila"><input type="range" id="D" min="0.02" max="0.20" step="0.002" value="0.080">
+        <output id="D_val">8.0 cm</output></div>
+      </div>
+      <p class="nota">Volumen del envase: <b id="vol_val">—</b></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>2 · Cantidad de líquido</legend>
+      <div class="control">
+        <label for="llenado">Nivel inicial <i>h<sub>0</sub></i></label>
+        <div class="fila"><input type="range" id="llenado" min="0" max="100" step="1" value="100">
+        <output id="llenado_val">100 %</output></div>
+      </div>
+      <div class="control">
+        <label for="rho">Densidad <i>ρ</i></label>
+        <div class="fila"><input type="range" id="rho" min="600" max="1400" step="10" value="1000">
+        <output id="rho_val">1000 kg/m³</output></div>
+      </div>
+      <p class="nota">Masa de líquido inicial: <b id="mw_ini">—</b></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>3 · Longitud de la cuerda</legend>
+      <div class="control">
+        <label for="Lc">Cuerda <i>L<sub>c</sub></i></label>
+        <div class="fila"><input type="range" id="Lc" min="0.05" max="1.50" step="0.01" value="0.500">
+        <output id="Lc_val">50 cm</output></div>
+      </div>
+      <p class="nota">Pivote → fondo: <i>s</i> = <b id="s_val">—</b></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>4 · Masa del envase vacío</legend>
+      <div class="control">
+        <label for="mb">Masa <i>m<sub>b</sub></i></label>
+        <div class="fila"><input type="range" id="mb" min="0.005" max="0.500" step="0.005" value="0.040">
+        <output id="mb_val">40 g</output></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>5 · Ángulo inicial</legend>
+      <div class="control">
+        <label for="th0">Amplitud inicial <i>θ<sub>0</sub></i></label>
+        <div class="fila"><input type="range" id="th0" min="1" max="60" step="1" value="12">
+        <output id="th0_val">12°</output></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>6 · Orificio de salida</legend>
+      <div class="control">
+        <label for="da">Diámetro <i>d<sub>a</sub></i></label>
+        <div class="fila"><input type="range" id="da" min="0" max="0.030" step="0.0005" value="0.005">
+        <output id="da_val">5.0 mm</output></div>
+      </div>
+      <div class="control">
+        <label for="Cd">Coef. de descarga <i>C<sub>d</sub></i></label>
+        <div class="fila"><input type="range" id="Cd" min="0.30" max="1.00" step="0.01" value="0.60">
+        <output id="Cd_val">0.60</output></div>
+      </div>
+      <p class="nota">Área <i>a</i> = <b id="a_val">—</b> · Tiempo de vaciado <i>t<sub>v</sub></i> = <b id="tv_val">—</b></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Simulación</legend>
+      <div class="control">
+        <label for="vel">Velocidad</label>
+        <div class="fila"><input type="range" id="vel" min="0.25" max="40" step="0.25" value="6">
+        <output id="vel_val">6×</output></div>
+      </div>
+      <div class="botones">
+        <button id="btn_play" class="primario">▶ Iniciar</button>
+        <button id="btn_reset">↺ Reiniciar</button>
+      </div>
+      <div class="botones">
+        <button id="btn_defecto" class="secundario">Valores por defecto</button>
+      </div>
+      <label class="checkbox"><input type="checkbox" id="chk_rastro" checked> Mostrar rastro</label>
+      <label class="checkbox"><input type="checkbox" id="chk_centros" checked> Mostrar CM y centro de oscilación</label>
+    </fieldset>
+  </aside>
+
+  <!-- ================= ZONA DE VISUALIZACIÓN ================= -->
+  <section class="visor">
+
+    <div class="panel escena-panel">
+      <div class="cabecera-panel">
+        <h2>Evolución temporal del sistema</h2>
+        <div class="reloj"><span id="reloj_t">t = 0.00 s</span></div>
+      </div>
+      <canvas id="escena"></canvas>
+      <div id="aviso" class="aviso oculto"></div>
+    </div>
+
+    <div class="panel lecturas-panel">
+      <h2>Lecturas instantáneas</h2>
+      <div class="lecturas">
+        <div class="lectura"><span class="etq">Ángulo θ</span><span class="val" id="l_theta">—</span></div>
+        <div class="lectura"><span class="etq">Amplitud Θ</span><span class="val" id="l_amp">—</span></div>
+        <div class="lectura"><span class="etq">Período T</span><span class="val" id="l_T">—</span></div>
+        <div class="lectura"><span class="etq">Nivel h</span><span class="val" id="l_h">—</span></div>
+        <div class="lectura"><span class="etq">Masa líquido m<sub>w</sub></span><span class="val" id="l_mw">—</span></div>
+        <div class="lectura"><span class="etq">Masa total M</span><span class="val" id="l_M">—</span></div>
+        <div class="lectura"><span class="etq">Centro de masa ℓ</span><span class="val" id="l_cm">—</span></div>
+        <div class="lectura"><span class="etq">Long. equiv. L<sub>eq</sub></span><span class="val" id="l_Leq">—</span></div>
+        <div class="lectura"><span class="etq">Inercia I<sub>O</sub></span><span class="val" id="l_I">—</span></div>
+        <div class="lectura"><span class="etq">Frenado γ = Γ/I<sub>O</sub></span><span class="val" id="l_gam">—</span></div>
+        <div class="lectura"><span class="etq">Energía E</span><span class="val" id="l_E">—</span></div>
+        <div class="lectura"><span class="etq">Adiabaticidad ε</span><span class="val" id="l_eps">—</span></div>
+      </div>
+    </div>
+
+    <div class="rejilla-graficas">
+      <div class="panel grafica-panel">
+        <h2>Evolución del período</h2>
+        <canvas class="grafica" id="g_periodo"></canvas>
+        <p class="pie">Puntos: período medido ciclo a ciclo entre cruces por cero.
+           Línea: predicción 2π√(L<sub>eq</sub>/g)·(1+Θ²/16). El máximo ocurre cuando la
+           superficie libre cruza el centro de oscilación.</p>
+      </div>
+
+      <div class="panel grafica-panel">
+        <h2>Centro de masa y centro de oscilación</h2>
+        <canvas class="grafica" id="g_cm"></canvas>
+        <p class="pie">ℓ(t): distancia pivote→CM. L<sub>eq</sub>=I<sub>O</sub>/S: centro de
+           oscilación. s−h: posición de la superficie libre. El cruce de las dos últimas
+           marca el extremo del período.</p>
+      </div>
+
+      <div class="panel grafica-panel">
+        <h2>Función de masa</h2>
+        <canvas class="grafica" id="g_masa"></canvas>
+        <p class="pie">m<sub>w</sub>(t) = ρAh<sub>0</sub>(1−t/t<sub>v</sub>)² por la ley de
+           Torricelli, y masa total M(t) = m<sub>b</sub> + m<sub>w</sub>(t).</p>
+      </div>
+
+      <div class="panel grafica-panel">
+        <h2>Energía mecánica</h2>
+        <canvas class="grafica" id="g_energia"></canvas>
+        <p class="pie">K = ½I<sub>O</sub>θ&#775;², U = gS(1−cos θ) respecto del equilibrio
+           instantáneo, E = K+U. E decae porque el chorro evacua momento angular:
+           no hay fricción en el modelo.</p>
+      </div>
+    </div>
+
+    <div class="panel validacion-panel">
+      <h2>Verificación del modelo</h2>
+      <p class="nota">Pruebas ejecutadas en el navegador al cargar la página, con las mismas
+         rutinas que mueven la simulación.</p>
+      <ul id="lista_validacion" class="validacion"></ul>
+    </div>
+
+    <div class="panel teoria-panel">
+      <h2>Ecuaciones implementadas</h2>
+      <div class="teoria">
+        <p><b>Vaciado (Torricelli, tanque cilíndrico):</b>
+           h(t) = h<sub>0</sub>(1 − t/t<sub>v</sub>)², con
+           t<sub>v</sub> = (A/C<sub>d</sub>a)·√(2h<sub>0</sub>/g).</p>
+        <p><b>Momento estático:</b> S(h) = m<sub>b</sub>d<sub>b</sub> + ρAh(s − h/2).</p>
+        <p><b>Inercia respecto del pivote:</b>
+           I<sub>O</sub>(h) = I<sub>b</sub> + m<sub>b</sub>d<sub>b</sub>² +
+           ρAh[R²/4 + h²/12 + (s − h/2)²].</p>
+        <p><b>Frenado por evacuación de momento angular:</b>
+           Γ = ρA|h&#775;|[h(2s − h) − R²/4] &gt; 0.
+           Surge del balance de momento angular con flujo de masa: el agua sale por el fondo
+           (brazo s) mientras la geometría pierde masa en la superficie libre (brazo s−h).</p>
+        <p><b>Ecuación de movimiento:</b>
+           I<sub>O</sub>θ&#776; + Γθ&#775; + gS·sen θ = 0, integrada con Runge–Kutta de
+           cuarto orden y paso fijo.</p>
+        <p class="aclaracion">Nota: el lagrangiano ingenuo ℒ = ½I<sub>O</sub>(t)θ&#775;² + gS(t)cos θ
+           da Γ = İ<sub>O</sub> y predice que la amplitud <i>crece</i>, lo cual es falso.
+           Este simulador usa la ecuación corregida.</p>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<footer class="pie-pagina">
+  Reto I.1 — Mecánica Analítica · el desarrollo completo está en
+  <code>documento/pendulo_vaciado.pdf</code>
+</footer>
+
+<script src="simulador.js"></script>
+</body>
+</html>
